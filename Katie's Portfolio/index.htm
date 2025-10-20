@@ -1,0 +1,308 @@
+﻿<!DOCTYPE html>
+<!-- 
+  Portfolio by Mary Katherine Stewart
+  Built with creativity, curiosity, and a touch of nostalgia.
+  Updated: Centered window layout + Solitaire integration
+-->
+<html lang="en">
+<head>
+  <title>Mary Katherine Stewart | Software Engineer</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" href="favicon.png" sizes="256x256">
+  <link rel="preload" as="image" href="bg.png">
+  <link rel="stylesheet" type="text/css" href="css/main.min.css">
+  <script src="js/fos.min.js"></script>
+</head>
+
+<body>
+  <!-- Desktop Environment -->
+  <fos-desktop id="mainDesktop">
+
+    <!-- Taskbar -->
+    <fos-bar>
+      <fos-menu name="Start">
+        <div style="min-width: 100px">Menu</div>
+        <hr>
+        <fos-menu-item href="aboutme"><img src="img/artage-io-48161_1588129131.png">About</fos-menu-item>
+        <fos-menu-item href="games"><img src="img/artage-io-48153_1588474190.png">Games</fos-menu-item>
+        <fos-menu-item href="art3d"><img src="img/artage-io-48145_1588129590.png">Projects</fos-menu-item>
+        <fos-menu-item href="contact"><img src="img/artage-io-48167_1588399863.png">Contact</fos-menu-item>
+      </fos-menu>
+      <div id="clock"></div>
+    </fos-bar>
+
+    <!-- Desktop Icons -->
+    <fos-icon href="aboutme" name="About">
+      <img src="img/artage-io-48161_1588129131.png" alt="About Me" title="About Me">
+    </fos-icon>
+
+    <fos-icon href="games" name="Games">
+      <img src="img/artage-io-48153_1588474190.png" alt="Games" title="Games">
+    </fos-icon>
+
+    <fos-icon href="projects" name="Projects">
+      <img src="img/artage-io-48145_1588129590.png" alt="3D Art" title="Projects">
+    </fos-icon>
+
+    <fos-icon href="contact" name="Contact">
+      <img src="img/artage-io-48167_1588399863.png" alt="Contact" title="Contact">
+    </fos-icon>
+
+    <!-- Windows -->
+    <fos-window name="aboutme" title="About Me">
+      <img src="img/katie.png">
+      <h3>Mary Katherine (Katie) Stewart</h3>
+      <br>
+      Hi! Nice to meet you!
+      <br><br>
+      I am a full-stack software engineer who loves the balance between logic and creativity.
+      My background in data science and web development has led me to projects that blend analytics, design,
+      and functionality into something fun and user-friendly.
+      <br><br>
+    </fos-window>
+
+    <fos-window name="games" title="Games">
+      <fos-desktop id="gamesIcons">
+        <fos-icon href="minesweeper" name="Mines" fixed="true">
+          <img src="img/minesweeper.png" alt="Minesweeper" title="Minesweeper">
+        </fos-icon>
+        <fos-icon href="solitaire" name="Solitaire" fixed="true">
+          <img src="img/solitaire.svg" alt="Solitaire" title="Solitaire">
+        </fos-icon>
+    </fos-window>
+
+  <fos-window name="minesweeper" title="Minesweeper" class="zero">
+  <div id="minesweeper-container">
+    <div id="minesweeper-header">
+      <div id="mine-count">010</div>
+      <button id="reset-button" class="face">🙂</button>
+      <div id="timer">000</div>
+    </div>
+    <div id="mineContainer"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const rows = 8, cols = 8, mines = 10;
+      const cellSize = 25, gap = 1;
+      const mineContainer = document.getElementById("mineContainer");
+      const mineCounter = document.getElementById("mine-count");
+      const timerDisplay = document.getElementById("timer");
+      const resetBtn = document.getElementById("reset-button");
+      const mineWindow = document.querySelector('fos-window[name="minesweeper"]');
+      const header = document.getElementById("minesweeper-header");
+
+      let grid = [], gameOver = false, timer = 0, timerInterval;
+
+      // Center window
+      function centerWindow() {
+        mineWindow.style.position = "fixed";
+        mineWindow.style.top = "50%";
+        mineWindow.style.left = "50%";
+        mineWindow.style.transform = "translate(-50%, -50%)";
+      }
+
+      // Timer
+      function startTimer() {
+        clearInterval(timerInterval);
+        timer = 0;
+        timerDisplay.textContent = `000`;
+        timerInterval = setInterval(() => {
+          timer++;
+          timerDisplay.textContent = timer.toString().padStart(3, '0');
+        }, 1000);
+      }
+      function stopTimer() { clearInterval(timerInterval); }
+
+      // Grid setup
+      function createGrid() {
+        mineContainer.innerHTML = '';
+        mineContainer.style.display = 'grid';
+        mineContainer.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+        mineContainer.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+        mineContainer.style.gap = `${gap}px`;
+        grid = [];
+        gameOver = false;
+        startTimer();
+
+        for (let r = 0; r < rows; r++) {
+          grid[r] = [];
+          for (let c = 0; c < cols; c++) {
+            const cell = document.createElement('div');
+            cell.style.width = cellSize + 'px';
+            cell.style.height = cellSize + 'px';
+            cell.style.background = '#bdbdbd';
+            cell.style.border = '2px outset #fff';
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            cell.addEventListener('click', onClick);
+            mineContainer.appendChild(cell);
+            grid[r][c] = { mine: false, revealed: false, element: cell, count: 0 };
+          }
+        }
+
+        placeMines();
+        calculateCounts();
+        mineCounter.textContent = mines.toString().padStart(3, '0');
+
+        // Resize window exactly to fit
+        const totalWidth = cols * (cellSize + gap) - gap + 28; // allow for frame
+        const totalHeight = header.offsetHeight + (rows * (cellSize + gap) - gap) + 52; // allow for title + borders
+        mineWindow.style.width = totalWidth + "px";
+        mineWindow.style.height = totalHeight + "px";
+        mineWindow.style.minWidth = totalWidth + "px";
+        mineWindow.style.minHeight = totalHeight + "px";
+        mineWindow.style.overflow = "hidden";
+        centerWindow();
+      }
+
+      function placeMines() {
+        let placed = 0;
+        while (placed < mines) {
+          const r = Math.floor(Math.random() * rows);
+          const c = Math.floor(Math.random() * cols);
+          if (!grid[r][c].mine) {
+            grid[r][c].mine = true;
+            placed++;
+          }
+        }
+      }
+
+      function calculateCounts() {
+        const dirs = [-1, 0, 1];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (grid[r][c].mine) continue;
+            let count = 0;
+            for (let dr of dirs) for (let dc of dirs) {
+              const nr = r + dr, nc = c + dc;
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[nr][nc].mine) count++;
+            }
+            grid[r][c].count = count;
+          }
+        }
+      }
+
+      function reveal(r, c) {
+        const cell = grid[r][c];
+        if (cell.revealed || gameOver) return;
+        cell.revealed = true;
+        cell.element.style.border = '1px solid #999';
+        cell.element.style.background = '#d3d3d3';
+        if (cell.mine) {
+          cell.element.style.background = 'red';
+          alert("💥 Boom! Game Over.");
+          gameOver = true;
+          stopTimer();
+          resetBtn.textContent = '💀';
+          return;
+        }
+        if (cell.count > 0) {
+          cell.element.textContent = cell.count;
+        } else {
+          const dirs = [-1, 0, 1];
+          for (let dr of dirs) for (let dc of dirs) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) reveal(nr, nc);
+          }
+        }
+      }
+
+      function onClick(e) {
+        const r = parseInt(e.target.dataset.row);
+        const c = parseInt(e.target.dataset.col);
+        reveal(r, c);
+      }
+
+      // Reset button
+      resetBtn.addEventListener('click', () => createGrid());
+      resetBtn.addEventListener('mousedown', () => resetBtn.textContent = '😮');
+      resetBtn.addEventListener('mouseup', () => resetBtn.textContent = '🙂');
+
+      createGrid();
+    });
+  </script>
+
+  <style>
+    fos-window[name="minesweeper"] {
+      overflow: hidden !important;
+    }
+
+    #minesweeper-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: silver;
+      border: 2px solid #fff;
+      box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff,
+                  inset -2px -2px grey, inset 2px 2px #dfdfdf;
+      padding: 10px;
+    }
+
+    #minesweeper-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: max-content;
+      background: #bdbdbd;
+      padding: 4px;
+      border: 2px solid #fff;
+      box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff,
+                  inset -2px -2px grey, inset 2px 2px #dfdfdf;
+      margin-bottom: 8px;
+    }
+
+    #mineContainer {
+      display: grid;
+      background-color: #bdbdbd;
+      border: 2px solid #808080;
+      box-shadow: inset 2px 2px #fff, inset -2px -2px #404040;
+      padding: 4px;
+      margin: 0;
+    }
+
+    .face {
+      font-size: 20px;
+      cursor: pointer;
+      background: #dcdcdc;
+      border: 2px solid #fff;
+      box-shadow: inset -1px -1px grey, inset 1px 1px #fff;
+      border-radius: 2px;
+    }
+
+    #mine-count, #timer {
+      font-family: 'Courier New', monospace;
+      font-size: 18px;
+      background-color: black;
+      color: red;
+      padding: 3px 6px;
+      text-align: right;
+    }
+  </style>
+</fos-window>
+
+    <fos-window name="solitaire" title="Solitaire" class="zero">
+      <div class="window-embed" style="width:100%; height:600px; padding:0; overflow:hidden;">
+        <iframe src="games/solitaire/Solitaire.html" title="Solitaire" style="width:100%; height:100%; border:none;"></iframe>
+      </div>
+    </fos-window>
+
+
+
+    <fos-window name="projects" title="Projects">
+      <h3>Projects</h3>
+      <p>Check out my portfolio pieces, from AI experiments to creative coding projects!</p>
+    </fos-window>
+
+    <fos-window name="contact" title="Contact">
+      <h3>Contact</h3>
+      <p>You can reach me through my social links or by email. I’d love to connect!</p>
+    </fos-window>
+
+  </fos-desktop>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
